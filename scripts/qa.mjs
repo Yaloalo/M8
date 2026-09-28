@@ -1057,15 +1057,23 @@ for (const [w, h, t] of [[1440, 900, false], [1024, 768, false], [1366, 1024, tr
   };
   await gotoView(page, 'PHRASE');
   const cell = page.locator('#cell-PHRASE-0-0');
-  const before = await cell.textContent();
   await drag(cell, 26); // 5 px per step: 5 steps up
-  const after = await cell.textContent();
-  const semis = (t) => ({ C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 })[t[0]] + (t[1] === '#' ? 1 : 0) + 12 * Number(t[2]);
-  check('drag a note up 5 steps: +5 semitones', semis(after) - semis(before) === 5, `${before} → ${after}`);
+  const dragged = await cell.textContent();
+  // The same as five X + → (note steps follow the song's scale).
+  await page.keyboard.press('Control+z');
+  await cell.click();
+  for (let i = 0; i < 5; i++) {
+    await page.keyboard.down('x');
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.up('x');
+  }
+  const keyed = await cell.textContent();
+  check('drag a note up 5 steps = five X + →', dragged === keyed, `${dragged} vs ${keyed}`);
   // A click without movement still just moves the cursor.
   await page.locator('#cell-PHRASE-2-1').click();
   check('a plain click on a cell does not change it', (await page.locator('#cell-PHRASE-2-1').textContent()) === (await page.locator('#cell-PHRASE-2-1').textContent()) && (await page.locator('.cell.is-cursor').getAttribute('id')) === 'cell-PHRASE-2-1');
-  // Shift + drag selects.
+  // Shift + drag selects (from the cursor, like Shift + click).
+  await page.locator('#cell-PHRASE-4-0').click();
   const a = await page.locator('#cell-PHRASE-4-0').boundingBox();
   const b = await page.locator('#cell-PHRASE-6-0').boundingBox();
   await page.keyboard.down('Shift');

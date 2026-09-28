@@ -74,7 +74,10 @@ Z + arrows in a note selection fill or randomise. On the note column Q 2 W 3 E R
 and write notes. A note without an instrument number is a legato pitch change, as on the M8.
 The full list is on the Project screen. On a touch screen use the on-screen keys (hold one,
 press another), the inspector and the pads. Hold a grid cell for a moment, then drag, to
-select a block; the edit bar under the grid then offers copy, cut, clear, reverse and ±1. On a phone the
+select a block; the edit bar under the grid then offers copy, cut, clear, reverse and ±1. With a mouse, any value drags like a
+knob: press on it and move up for more, down for less (a fast drag takes big steps, notes
+follow the scale). That works on grid cells, parameters, the pool's mixer columns, the id
+stepper, tempo and octave. Shift + drag selects in the grid. Choosing a preset plays it. On a phone the
 keyboard button next to undo / redo docks the eight M8 keys in the edit bar, right under the
 grid. Two tabs on the same project stay in step: a save in one is picked up by the other.
 
