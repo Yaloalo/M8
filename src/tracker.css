@@ -1,0 +1,2745 @@
+/* The tracker screens. Built from tokens only: no dark-mode rules needed below. */
+.workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 22px;
+  align-items: start;
+}
+.workspace-main,
+.workspace-side {
+  min-width: 0;
+}
+.workspace-side {
+  position: sticky;
+  top: calc(var(--header) + 16px);
+  max-height: calc(100vh - var(--header) - var(--bar) - 32px);
+  overflow: auto;
+  scrollbar-width: thin;
+}
+.editor-hint {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: right;
+}
+.editor-scroll {
+  overflow-x: auto;
+}
+/* ------------------------------------------------------------------ grid */
+.tracker {
+  --w-row: 52px;
+  --w-byte: 44px;
+  --w-note: 56px;
+  --w-cmd: 52px;
+  --row-h: 38px;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  padding: 10px 14px 14px;
+  user-select: none;
+  min-width: max-content;
+  width: 100%;
+  touch-action: pan-y;
+}
+.tracker-head,
+.tracker-row {
+  display: grid;
+  grid-template-columns: var(--cols);
+  gap: 3px;
+}
+.tracker-row {
+  margin-top: 3px;
+}
+.tracker-head span {
+  font-family: Inter, 'Segoe UI', Arial, sans-serif;
+  font-size: 10px;
+  letter-spacing: 1.55px;
+  font-weight: 650;
+  color: var(--muted);
+  text-align: center;
+  padding: 4px 0 6px;
+  border-bottom: 1px solid var(--line);
+}
+.tracker-head span.is-val {
+  border-bottom-style: dotted;
+}
+.tracker-head em {
+  font-style: normal;
+  margin-left: 4px;
+  padding: 0 3px;
+  border-radius: 3px;
+  background: var(--accent);
+  color: var(--tool-active-ink);
+}
+.tracker-rowhead {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  padding-right: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.tracker-rowhead b {
+  color: var(--chord);
+  font-size: 12px;
+}
+/* A beat line every four rows, like the bar lines of the step grid (style.md §5.6). */
+.tracker-row.is-beat .tracker-rowhead {
+  color: var(--ink);
+  font-weight: 750;
+}
+.tracker-row.is-beat .cell {
+  border-top: 2px solid var(--line-strong);
+}
+.cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--row-h);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface-raised);
+  color: var(--ink);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  white-space: pre;
+}
+.cell:hover {
+  border-color: var(--line-strong);
+}
+/* Empty: faded, hairline, lighter text — three cues. */
+.cell.is-empty {
+  background: var(--pad-off);
+  color: var(--muted);
+  font-weight: 450;
+  opacity: 0.75;
+}
+.cell.is-off {
+  border-style: dashed;
+  border-color: var(--line-strong);
+  letter-spacing: 1.5px;
+}
+.cell.is-muted {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+.cell.k-note:not(.is-empty) {
+  font-weight: 750;
+}
+/* Playhead: wash, left bar and weight; the row also gets a ▸ in its label. */
+.tracker-row.is-play .cell,
+.cell.is-play {
+  background: var(--chord-light);
+  box-shadow: inset 3px 0 0 var(--chord);
+  font-weight: 750;
+  opacity: 1;
+}
+/* Selection: wash plus a dashed ring (a ring, so the grid does not shift). */
+.cell.is-selected {
+  background: var(--accent-light);
+  outline: 1px dashed var(--accent);
+  outline-offset: -3px;
+  opacity: 1;
+}
+/* Cursor: inverted fill, heavier text and a ring — "you are here". */
+.cell.is-cursor {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--tool-active-ink);
+  font-weight: 800;
+  box-shadow: 0 0 0 2px var(--accent-light), inset 0 0 0 2px var(--accent);
+  opacity: 1;
+}
+.tracker-song {
+  --w-byte: 40px;
+}
+/* ------------------------------------------------------------------ forms */
+.form {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px 22px;
+}
+.form-group {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-subtle);
+  padding: 12px 12px 8px;
+  min-width: 0;
+}
+.form-group-title {
+  margin: 0 4px 8px;
+}
+/*
+ * Parameter rows: label | value | steppers. The three columns are the same on every row,
+ * cursor or not, so values line up down a group. The level bar is a thin line under the
+ * value instead of sharing its line, so it never pushes or truncates the text.
+ */
+.field {
+  --steppers: 59px;
+  display: grid;
+  grid-template-columns: minmax(84px, 0.8fr) minmax(0, 1.2fr) var(--steppers);
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 3px 4px 3px 10px;
+  margin-bottom: 4px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.field:hover {
+  border-color: var(--line);
+  background: var(--surface);
+}
+.field-label {
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.6px;
+  color: var(--muted);
+  min-width: 0;
+  /* Two-word labels may wrap at the space; a single word never breaks. */
+  overflow-wrap: normal;
+}
+.field-value {
+  position: relative;
+  display: block;
+  min-width: 0;
+  padding: 4px 0 6px;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+}
+.field-value b {
+  display: block;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.field-bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: min(100%, 120px);
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(to right, currentColor calc(var(--v) * 100%), transparent 0) var(--line);
+  opacity: 0.7;
+}
+/* A name field uses the value and stepper columns together, so names are not cut short. */
+.field-text {
+  grid-column: 2 / 4;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  min-height: 32px;
+  padding: 4px 8px;
+  width: 100%;
+}
+.field-steppers {
+  display: flex;
+  gap: 3px;
+}
+.field-steppers button {
+  min-height: 30px;
+  min-width: 28px;
+  padding: 0;
+  font-family: var(--mono);
+}
+.field.is-cursor {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--tool-active-ink);
+}
+.field.is-cursor .field-label {
+  color: var(--tool-active-ink);
+}
+.field.is-cursor .field-steppers button {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--surface);
+}
+/* Parameters the slot's type ignores stay reachable, just dimmed and struck through. */
+.field.is-idle:not(.is-cursor) {
+  opacity: 0.45;
+}
+.field.is-idle:not(.is-cursor) .field-label {
+  text-decoration: line-through;
+}
+@media (pointer: coarse) {
+  .field {
+    --steppers: 83px;
+  }
+  .field-steppers button {
+    min-height: 40px;
+    min-width: 40px;
+  }
+}
+@media (max-width: 360px) {
+  /* 320–360 px: the row is only about 230 px wide; the longest value (1A 26 TIC) must still fit. */
+  .field {
+    --steppers: 71px;
+    grid-template-columns: minmax(64px, 0.8fr) minmax(0, 1.2fr) var(--steppers);
+    gap: 6px;
+    padding-left: 6px;
+  }
+  .field-label {
+    font-size: 10px;
+    letter-spacing: 0.2px;
+  }
+  .field-value {
+    font-size: 12px;
+  }
+  .field-steppers button {
+    min-width: 34px;
+  }
+}
+/* ------------------------------------------------------------------ headings */
+.id-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px 0 0;
+}
+.id-stepper b {
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 750;
+  min-width: 36px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+/* ------------------------------------------------------------------ inspector */
+.inspect-value {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.inspect-big {
+  font-family: var(--mono);
+  font-size: 30px;
+  font-weight: 750;
+  letter-spacing: 1px;
+  font-variant-numeric: tabular-nums;
+  min-width: 84px;
+  padding: 6px 12px;
+  border: 2px solid var(--accent);
+  border-radius: 7px;
+  text-align: center;
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.inspect-big.is-empty {
+  border-style: dashed;
+  color: var(--muted);
+  border-color: var(--line-strong);
+}
+.inspect-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 0;
+}
+.inspect-help {
+  font-size: 12px;
+  line-height: 1.65;
+  margin: 12px 0 0;
+}
+.stepper-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.stepper-row button {
+  font-family: var(--mono);
+  padding: 8px 4px;
+}
+.inspect-range {
+  width: 100%;
+  margin-top: 6px;
+}
+.fx-palette {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 4px;
+  margin-top: 14px;
+}
+.fx-palette button {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 650;
+  padding: 4px;
+  min-height: 32px;
+  color: var(--muted);
+}
+.fx-palette button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--tool-active-ink);
+}
+.fill-open {
+  display: flex;
+  gap: 6px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.fill-tool {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid var(--accent-border);
+  border-left: 3px solid var(--accent);
+  border-radius: 5px;
+  background: var(--surface-subtle);
+}
+.fill-title {
+  margin-bottom: 10px;
+}
+.fill-row {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.fill-row > select + select {
+  grid-column: 2;
+}
+.fill-row .segmented {
+  flex-wrap: wrap;
+}
+.fill-row .segmented button {
+  padding: 6px 8px;
+  font-size: 10.5px;
+}
+.fill-num {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.fill-num b {
+  font-family: var(--mono);
+  min-width: 48px;
+  text-align: center;
+  font-size: 13px;
+}
+.fill-num button {
+  min-height: 32px;
+  min-width: 32px;
+  padding: 0;
+}
+.fill-tool .panel-tools {
+  margin-top: 12px;
+}
+.meter {
+  --l: 0;
+  display: block;
+  height: 8px;
+  border-radius: 2px;
+  border: 1px solid var(--line);
+  background: linear-gradient(to right, var(--accent) calc(var(--l) * 100%), transparent 0);
+}
+/* ------------------------------------------------------------------ view map */
+.view-map {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+  padding: 12px;
+}
+.view-map button {
+  padding: 4px 2px;
+  font-size: 10.5px;
+  font-weight: 650;
+  min-height: 34px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.view-map button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--tool-active-ink);
+}
+/* ------------------------------------------------------------------ hardware keys */
+.hw-keys {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px;
+}
+.hw-dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 48px);
+  grid-template-rows: repeat(2, 48px);
+  gap: 5px;
+}
+.hw-dpad .hw-up {
+  grid-column: 2;
+}
+.hw-dpad .hw-left {
+  grid-column: 1;
+  grid-row: 2;
+}
+.hw-dpad .hw-down {
+  grid-column: 2;
+  grid-row: 2;
+}
+.hw-dpad .hw-right {
+  grid-column: 3;
+  grid-row: 2;
+}
+.hw-mods {
+  display: grid;
+  grid-template-columns: repeat(2, 64px);
+  grid-template-rows: repeat(2, 48px);
+  gap: 5px;
+}
+.hw-key {
+  flex-direction: column;
+  gap: 1px;
+  padding: 2px;
+  min-height: 48px;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.8px;
+  border-radius: 6px;
+  user-select: none;
+  touch-action: none;
+}
+.hw-key small {
+  font-size: 8.5px;
+  font-weight: 550;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+}
+.hw-key:active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--tool-active-ink);
+}
+.hw-key:active small {
+  color: var(--tool-active-ink);
+}
+.hw-play {
+  border-width: 2px;
+  border-color: var(--accent);
+}
+/* ------------------------------------------------------------------ project page */
+.sample-list {
+  list-style: none;
+  margin: 0;
+  padding: 12px 20px 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 6px;
+}
+.sample-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.sample-list li b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.key-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.key-table th,
+.key-table td {
+  text-align: left;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--line);
+  line-height: 1.5;
+}
+.key-table th {
+  font-family: var(--mono);
+  font-weight: 650;
+  white-space: nowrap;
+  width: 1%;
+}
+.key-table td {
+  color: var(--muted);
+}
+.render-length {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tempo-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tempo-field input {
+  width: 56px;
+  min-height: 32px;
+  padding: 4px 6px;
+  text-align: center;
+  background: transparent;
+  color: var(--bar-ink);
+  border-color: var(--bar-line);
+  font-variant-numeric: tabular-nums;
+}
+.tempo-field small {
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--bar-muted);
+}
+:is(.transport-bar) :is(button, input):focus-visible {
+  outline-color: var(--bar-ink);
+}
+@media (max-width: 1450px) {
+  /* ------------------------------------------------------------------ responsive */
+  .workspace-grid {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+}
+@media (max-width: 1150px) {
+  /* Small laptops and tablets in landscape keep the side column, just narrower. */
+  .workspace-grid {
+    grid-template-columns: minmax(0, 1fr) 280px;
+  }
+}
+@media (max-width: 959px) {
+  .workspace-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .workspace-side {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 22px;
+  }
+  /* On a narrow screen the keys sit right under the grid, where the thumbs are. */
+  .workspace-side .inspector {
+    grid-column: 1 / -1;
+  }
+}
+@media (pointer: coarse) {
+  /* Thumb-sized rows for touch only: a narrow window with a mouse keeps the dense grid. */
+  .tracker {
+    --row-h: 44px;
+  }
+  .hw-dpad {
+    grid-template-columns: repeat(3, 54px);
+    grid-template-rows: repeat(2, 54px);
+  }
+  .hw-mods {
+    grid-template-columns: repeat(2, 72px);
+    grid-template-rows: repeat(2, 54px);
+  }
+}
+@media (max-width: 900px) {
+  .workspace-side {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* Thumbs first: the eight keys right under the grid and pads. */
+  .workspace-side .keys-panel {
+    order: -1;
+  }
+}
+@media (max-width: 700px) {
+  .editor-hint {
+    display: none;
+  }
+  .form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .theme-label {
+    display: none;
+  }
+}
+@media (max-width: 600px) {
+  /* Ten columns on a phone, like the M8's own tiny screen: narrow, but all visible. */
+  .tracker {
+    --w-row: 22px;
+    --w-byte: 24px;
+    --w-note: 32px;
+    --w-cmd: 30px;
+    font-size: 11.5px;
+    letter-spacing: 0;
+    padding: 6px 6px 10px;
+    min-width: 0;
+  }
+  .cell {
+    letter-spacing: 0;
+  }
+  .editor-scroll {
+    overflow-x: visible;
+  }
+  .tracker-head,
+  .tracker-row {
+    gap: 2px;
+  }
+  .tracker-rowhead {
+    padding-right: 4px;
+    font-size: 11px;
+  }
+}
+
+/* ------------------------------------------------------------------ transport */
+
+.transport-bar {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 60;
+  height: var(--bar);
+  padding: 0 24px env(safe-area-inset-bottom);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+  background: var(--bar-bg);
+  color: var(--bar-ink);
+  border-top: 1px solid var(--bar-line);
+}
+.transport-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  font-size: 9px;
+  letter-spacing: 1.4px;
+  font-weight: 650;
+}
+.transport-led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--bar-muted);
+  flex-shrink: 0;
+}
+.transport-led.is-on {
+  background: var(--bar-ink);
+  border-color: var(--bar-ink);
+}
+.transport-mode {
+  color: var(--bar-muted);
+  white-space: nowrap;
+}
+.transport-message {
+  color: var(--bar-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.transport-center {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.transport-beats {
+  display: flex;
+  gap: 5px;
+  margin-right: 8px;
+}
+.transport-beats i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--bar-line);
+}
+.transport-beats i.is-on {
+  background: var(--bar-ink);
+  transform: scale(1.35);
+}
+.bar-button {
+  min-height: 32px;
+  padding: 4px 9px;
+  background: transparent;
+  color: var(--bar-ink);
+  border-color: var(--bar-line);
+  font-size: 12px;
+  font-weight: 700;
+}
+.bar-button:hover {
+  background: var(--bar-line);
+  border-color: var(--bar-muted);
+}
+.bar-play {
+  /* Fixed size: Play and Stop must not move the centred transport group. */
+  width: 84px;
+  justify-content: center;
+  min-height: 34px;
+  padding: 6px 12px;
+  background: var(--bar-button);
+  color: var(--bar-button-ink);
+  border-color: var(--bar-button);
+  font-size: 12px;
+  font-weight: 750;
+}
+.bar-play:hover {
+  background: var(--bar-button);
+  opacity: 0.88;
+}
+.bar-play.is-playing {
+  background: transparent;
+  color: var(--bar-ink);
+  border-color: var(--bar-ink);
+  box-shadow: inset 0 0 0 1px var(--bar-ink);
+}
+.transport-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--bar-muted);
+}
+.transport-right kbd {
+  color: var(--bar-ink);
+  border-color: var(--bar-line);
+}
+.transport-pos {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--bar-ink);
+  letter-spacing: 0.5px;
+}
+@media (max-width: 900px) {
+  .transport-right {
+    display: none;
+  }
+  .transport-bar {
+    grid-template-columns: 1fr auto;
+  }
+}
+@media (max-width: 600px) {
+  .transport-bar {
+    padding: 0 12px env(safe-area-inset-bottom);
+    gap: 8px;
+  }
+  .transport-status .transport-mode,
+  .transport-message,
+  .transport-beats,
+  .bar-song {
+    display: none;
+  }
+  .transport-status {
+    display: none;
+  }
+  .transport-bar {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+  .hw-keys {
+    justify-content: space-around;
+  }
+  .panel-heading {
+    padding: 12px 14px;
+  }
+  .panel-body {
+    padding: 14px;
+  }
+}
+/* ------------------------------------------------------------------ sub-tabs, tour */
+.subtabs button {
+  font-size: 11px;
+  padding: 6px 14px;
+}
+
+/* ------------------------------------------------------------------ teach mode */
+
+.tour-ring {
+  position: fixed;
+  z-index: 90;
+  border: 2px solid var(--accent);
+  border-radius: 9px;
+  pointer-events: none;
+  /* Dims everything else, but lets clicks through so the target stays usable. */
+  box-shadow:
+    0 0 0 4px var(--surface),
+    0 0 0 9999px rgb(0 0 0 / 0.28);
+  /* No sliding: the ring jumps to its target, so it never sweeps across the bars. */
+}
+.tour-bubble {
+  position: fixed;
+  z-index: 91;
+  padding: 14px 16px 12px;
+  background: var(--surface-raised);
+  color: var(--ink);
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  box-shadow: 0 18px 44px rgb(0 0 0 / 0.24);
+}
+.tour-bubble::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--arrow-x) - 7px);
+  width: 12px;
+  height: 12px;
+  background: var(--surface-raised);
+  border: 2px solid var(--accent);
+  transform: rotate(45deg);
+}
+.tour-bubble.is-below::before {
+  top: -8px;
+  border-right: 0;
+  border-bottom: 0;
+}
+.tour-bubble.is-above::before {
+  bottom: -8px;
+  border-left: 0;
+  border-top: 0;
+}
+.tour-bubble.is-none::before {
+  display: none;
+}
+.tour-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: -6px -8px 4px 0;
+}
+.tour-close {
+  min-height: 30px;
+  min-width: 30px;
+  padding: 0;
+  border: 0;
+}
+.tour-bubble strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 650;
+  margin-bottom: 4px;
+}
+.tour-bubble p {
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0 0 8px;
+}
+.tour-bubble p.tour-keys {
+  font-size: 11px;
+  color: var(--muted);
+}
+.tour-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+.tour-actions .text-link {
+  margin-right: auto;
+}
+.tour-actions button:not(.text-link) {
+  min-height: 32px;
+  padding: 5px 12px;
+}
+/* ------------------------------------------------------------------ displays */
+.waveform {
+  display: block;
+  width: 100%;
+  height: 150px;
+  padding: 0;
+  color: var(--ink);
+  border: 0 solid var(--line-strong);
+  background: var(--surface-subtle);
+}
+.scope {
+  display: block;
+  width: 120px;
+  height: 30px;
+  margin-right: 8px;
+  color: var(--bar-ink);
+  border: 0 solid var(--bar-line);
+}
+.preset-picker select {
+  min-height: 38px;
+}
+@media (max-width: 900px) {
+  .scope {
+    display: none;
+  }
+}
+/* ------------------------------------------------------------------ live mode */
+.editor-heading-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.live-toggle {
+  min-height: 30px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 1.2px;
+  border-style: dashed;
+}
+.live-toggle.is-on {
+  background: var(--accent);
+  border-color: var(--accent);
+  border-style: solid;
+  color: var(--tool-active-ink);
+}
+/* Queued: a dashed ring, heavier text and a corner notch — waiting to start. */
+.cell.is-queued {
+  outline: 2px dashed var(--chord);
+  outline-offset: -4px;
+  font-weight: 800;
+  opacity: 1;
+  background-image: linear-gradient(135deg, var(--chord) 7px, transparent 7px);
+}
+/* ------------------------------------------------------------------ compact heading, row density */
+/* Tool screens keep the heading to one line so all 16 rows sit above the transport bar. */
+.page-heading.is-compact {
+  margin-bottom: 14px;
+  align-items: center;
+}
+.page-heading.is-compact .eyebrow {
+  margin-bottom: 6px;
+}
+.page-heading.is-compact h1 {
+  font-size: 28px;
+  letter-spacing: -0.8px;
+  margin-bottom: 0;
+}
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+/* The page scrolls to keep the cursor clear of the sticky header and the transport bar. */
+.cell {
+  scroll-margin-top: calc(var(--header) + 16px);
+  scroll-margin-bottom: calc(var(--bar) + 16px);
+}
+.page-heading.is-compact .heading-actions {
+  padding-top: 0;
+}
+.about-toggle {
+  min-height: 28px;
+  min-width: 28px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 750;
+}
+.about-toggle[aria-expanded='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--tool-active-ink);
+}
+.about-text {
+  margin: 8px 0 0;
+  font-size: 13px;
+  max-width: 780px;
+}
+.shared-mark {
+  /* No line box of its own: the "*" must not make the title 1 px taller. */
+  line-height: 0;
+  text-decoration: none;
+  font-family: var(--mono);
+  font-weight: 800;
+  cursor: help;
+}
+.workspace {
+  padding-top: 20px;
+}
+.editor-panel .panel-heading {
+  min-height: 48px;
+  padding: 8px 16px;
+}
+@media (pointer: fine) and (min-width: 960px) {
+  /* A mouse needs less than a thumb: 30px rows on fine pointers, 44px on touch (below). */
+  .tracker {
+    --row-h: 30px;
+    padding-top: 6px;
+  }
+  .tracker-row {
+    margin-top: 2px;
+  }
+  .tracker-head span {
+    padding: 2px 0 4px;
+  }
+}
+.cell.is-hollow {
+  border-style: dashed;
+  color: var(--muted);
+  font-weight: 500;
+}
+/* ------------------------------------------------------------------ cell bar (phones) */
+.cell-bar {
+  display: none;
+}
+@media (max-width: 900px) {
+  .cell-bar {
+    position: sticky;
+    bottom: calc(var(--bar) + 8px);
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: -12px 0 22px;
+    padding: 8px;
+    background: var(--surface-raised);
+    border: 2px solid var(--accent);
+    border-radius: 8px;
+    box-shadow: 0 6px 18px rgb(0 0 0 / 0.18);
+    overflow-x: auto;
+  }
+  .cell-bar button,
+  .cell-bar select {
+    flex: 0 0 auto;
+    min-height: 44px;
+    padding: 6px 10px;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .cell-bar select {
+    max-width: 150px;
+  }
+  .cell-bar-value {
+    display: flex;
+    flex-direction: column;
+    min-width: 58px;
+    padding: 0 4px;
+  }
+  .cell-bar-value small {
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: var(--muted);
+    font-weight: 650;
+  }
+  .cell-bar-value b {
+    font-family: var(--mono);
+    font-size: 18px;
+    white-space: pre;
+  }
+}
+/* ------------------------------------------------------------------ touch wording */
+.touch-only {
+  display: none;
+}
+@media (pointer: coarse), (hover: none) {
+  /* Touch: a coarse pointer, or no hover at all (some touch browsers report a fine pointer). */
+  .touch-only {
+    display: inline;
+  }
+  .transport-right .key-only,
+  .key-only,
+  .editor-hint,
+  .tour-bubble p.tour-keys {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------------ tracks */
+
+.track-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px 12px 12px;
+}
+.track-line {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 70px 34px 34px;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+}
+.track-line.is-focus {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+.track-num {
+  font-family: var(--mono);
+  font-weight: 750;
+  font-size: 13px;
+}
+.track-now {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 13px;
+  min-width: 0;
+}
+.track-now small {
+  font-size: 10px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.track-line:not(.is-active) .track-now b {
+  color: var(--muted);
+  font-weight: 450;
+}
+.track-line.is-silent .track-num {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+.ms {
+  min-height: 30px;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 750;
+}
+.ms.is-on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--tool-active-ink);
+}
+@media (pointer: coarse), (hover: none) {
+  .ms {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .track-line {
+    grid-template-columns: 24px minmax(0, 1fr) 56px 44px 44px;
+  }
+}
+.inspect-inst-tools {
+  margin-bottom: 12px;
+}
+.crash code {
+  font-family: var(--mono);
+}
+@media (max-width: 700px) {
+  .page-heading.is-compact {
+    align-items: flex-start;
+  }
+}
+@media (max-width: 900px) {
+  /* ------------------------------------------------------------------ phone edit bar, short screens */
+  .cell-bar {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+  .cell-bar button,
+  .cell-bar select {
+    flex: 1 1 auto;
+    min-width: 44px;
+  }
+  .cell-bar-value {
+    flex: 0 0 auto;
+  }
+}
+@media (pointer: fine) and (min-width: 960px) and (max-height: 860px) {
+  /* Short laptop screens (1280×800): tighter rows so a whole phrase still fits. */
+  .tracker {
+    --row-h: 25px;
+    font-size: 13px;
+  }
+  .workspace {
+    padding-top: 12px;
+  }
+  .page-heading.is-compact {
+    margin-bottom: 8px;
+  }
+  .page-heading.is-compact h1 {
+    font-size: 24px;
+  }
+  .page-heading.is-compact .eyebrow {
+    margin-bottom: 2px;
+  }
+  .editor-panel .panel-heading {
+    min-height: 40px;
+    padding: 4px 16px;
+  }
+  :root {
+    --header: 104px;
+  }
+}
+.cell-bar-steps {
+  display: contents;
+}
+.sample-edit {
+  display: inline-flex;
+  gap: 6px;
+}
+.sample-edit select,
+.sample-edit button {
+  min-height: 34px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+/* ------------------------------------------------------------------ perform */
+
+.perform {
+  display: grid;
+  gap: 18px;
+}
+.perform .notice {
+  margin: 0;
+}
+.perform-block {
+  display: grid;
+  gap: 10px;
+}
+.perform-slider {
+  width: 100%;
+  height: 44px;
+}
+.perform-spring {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.perform-pads {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.perform-pad {
+  flex-direction: column;
+  gap: 2px;
+  min-height: 76px;
+  border-radius: 7px;
+  user-select: none;
+  touch-action: none;
+}
+.perform-pad b {
+  font-family: var(--mono);
+  font-size: 15px;
+  letter-spacing: 1px;
+}
+.perform-pad small {
+  font-size: 10px;
+  color: var(--muted);
+}
+/* Held: inverted, heavier border and a top bar — three cues. */
+.perform-pad.is-held {
+  background: var(--accent);
+  border: 2px solid var(--chord);
+  box-shadow: inset 0 4px 0 var(--chord-light);
+  color: var(--tool-active-ink);
+}
+.perform-pad.is-held small {
+  color: var(--tool-active-ink);
+}
+.perform-tracks {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 6px;
+}
+.perform-track {
+  flex-direction: column;
+  min-height: 64px;
+  padding: 4px;
+}
+.perform-track b {
+  font-family: var(--mono);
+  font-size: 16px;
+}
+.perform-track small {
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+.perform-track.is-muted {
+  border-style: dashed;
+  color: var(--muted);
+  background: var(--pad-off);
+}
+.perform-sliders {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.perform-slide {
+  display: grid;
+  gap: 6px;
+}
+.perform-slide input {
+  width: 100%;
+  height: 40px;
+}
+@media (max-width: 700px) {
+  .perform-pads {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .perform-tracks {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .perform-sliders {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* ------------------------------------------------------------------ command list, bookmarks, pool */
+/* The command list scrolls inside the inspector instead of running under the transport. */
+.fx-palette {
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+/* Bookmarked chain: a double underline and a corner notch. */
+.cell.is-bookmark {
+  text-decoration: underline double;
+  text-underline-offset: 3px;
+  background-image: linear-gradient(225deg, var(--accent) 6px, transparent 6px);
+}
+.tracker-head span.is-moving {
+  border-bottom: 3px solid var(--accent);
+  color: var(--ink);
+}
+/* ------------------------------------------------------------------ folding panels, small phones */
+/* Phone: side panels fold to their heading; the toggle only exists there. */
+.fold-toggle {
+  display: none;
+}
+@media (max-width: 900px) {
+  .fold-toggle {
+    display: inline-flex;
+    min-height: 40px;
+    min-width: 40px;
+    font-family: var(--mono);
+    font-size: 16px;
+  }
+  .panel.is-folded > :not(.panel-heading) {
+    display: none;
+  }
+  .panel.is-folded > .panel-heading {
+    border-bottom: 0;
+  }
+}
+@media (max-width: 340px) {
+  /* 320 px phones: one more notch down so FX3's value still fits. */
+  .tracker {
+    --w-row: 18px;
+    --w-byte: 22px;
+    --w-note: 28px;
+    --w-cmd: 26px;
+    font-size: 10.5px;
+    padding: 4px 4px 8px;
+  }
+  .tracker-head,
+  .tracker-row {
+    gap: 1px;
+  }
+}
+@media (max-width: 430px) {
+  /* Phones: the mark alone carries the brand, the project name needs the room. */
+  .brand > div {
+    display: none;
+  }
+}
+@media (max-width: 600px) {
+  /* Phones: 36px rows show a whole phrase in far less scrolling; cells stay tappable. */
+  .tracker {
+    --row-h: 36px;
+  }
+}
+.render-grid {
+  display: grid;
+  gap: 14px;
+}
+.view-map button {
+  padding: 4px 3px;
+}
+.view-map-extra {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-top: 0;
+}
+@media (max-width: 360px) {
+  /* Small phones: one compact heading row, so the grid starts near the top. */
+  .page-heading.is-compact .eyebrow,
+  .about-toggle {
+    display: none;
+  }
+  .page-heading.is-compact {
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+  .page-heading.is-compact h1 {
+    font-size: 20px;
+  }
+  .heading-actions .icon-button {
+    min-width: 34px;
+    padding: 4px;
+  }
+  .heading-actions button[aria-label='Copy'],
+  .heading-actions button[aria-label='Paste'] {
+    display: none;
+  }
+  .form-group {
+    padding: 8px 6px 4px;
+  }
+  .preset-picker select {
+    max-width: 150px;
+  }
+}
+/* ------------------------------------------------------------------ effect list */
+.fx-pick {
+  position: fixed;
+  z-index: 80;
+  left: 50%;
+  top: calc(var(--header) + 16px);
+  transform: translateX(-50%);
+  width: min(720px, calc(100vw - 32px));
+  max-height: calc(100vh - var(--header) - var(--bar) - 32px);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-raised);
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  box-shadow: 0 18px 44px rgb(0 0 0 / 0.24);
+}
+.fx-pick-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.fx-pick-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  min-height: 0;
+  overflow: hidden;
+}
+.fx-pick-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px 8px 12px;
+  overflow-y: auto;
+}
+.fx-pick-list ul {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: grid;
+  gap: 1px;
+}
+.fx-pick-group {
+  margin: 8px 4px 4px;
+}
+.fx-pick-list li[role='option'] {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--muted);
+}
+.fx-pick-list li[role='option'] b {
+  font-family: var(--mono);
+  color: var(--ink);
+  font-weight: 750;
+}
+.fx-pick-list li.is-cursor {
+  background: var(--accent);
+  color: var(--tool-active-ink);
+}
+.fx-pick-list li.is-cursor b {
+  color: var(--tool-active-ink);
+}
+.fx-pick-help {
+  padding: 14px;
+  border-left: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fx-pick-help b {
+  font-family: var(--mono);
+}
+.fx-pick-help p {
+  font-size: 12.5px;
+  margin: 0;
+}
+@media (max-width: 700px) {
+  .fx-pick-body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+  .fx-pick-help {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+}
+/* Recording: inverted and dashed, so it reads as "live" without colour. */
+button.is-recording {
+  background: var(--accent);
+  color: var(--tool-active-ink);
+  border: 2px dashed var(--tool-active-ink);
+}
+@media (max-width: 420px) {
+  /* The eight keys must fit any phone: tracks shrink before anything is cut off. */
+  .hw-keys {
+    gap: clamp(6px, 3vw, 16px);
+    padding: 12px 10px;
+  }
+  .hw-dpad {
+    grid-template-columns: repeat(3, minmax(40px, 54px));
+    grid-template-rows: repeat(2, 50px);
+    gap: 4px;
+  }
+  .hw-mods {
+    grid-template-columns: repeat(2, minmax(56px, 72px));
+    grid-template-rows: repeat(2, 50px);
+    gap: 4px;
+  }
+}
+@media (max-width: 600px) {
+  /* The key reference: a stacked list on phones, never cut mid-word. */
+  .key-table,
+  .key-table tbody,
+  .key-table tr,
+  .key-table th,
+  .key-table td {
+    display: block;
+    width: auto;
+  }
+  .key-table tr {
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .key-table th,
+  .key-table td {
+    padding: 0;
+    border: 0;
+    white-space: normal;
+  }
+  .key-table th {
+    margin-bottom: 2px;
+  }
+}
+.rec-level {
+  --l: 0;
+  display: inline-block;
+  width: 40px;
+  height: 6px;
+  border: 1px solid currentColor;
+  background: linear-gradient(to right, currentColor calc(var(--l) * 100%), transparent 0);
+}
+/* Commands for another instrument type: struck through and quiet, still selectable. */
+.fx-pick-list li.is-other span {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+.rec-stop {
+  border-style: dashed;
+  font-family: var(--mono);
+}
+
+/* ------------------------------------------------------------------ pool */
+
+.pool {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.pool th,
+.pool td {
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.pool th[scope='row'],
+.pool td:nth-child(2),
+.pool td:nth-child(3) {
+  font-family: var(--mono);
+}
+.pool tr.is-current {
+  background: var(--accent-light);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.pool tr.is-unused td {
+  color: var(--muted);
+}
+.pool-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+.pool-actions button + button {
+  margin-left: 4px;
+}
+.pool-actions button {
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+.pool td.pool-mix,
+.pool th.pool-mix {
+  font-family: var(--mono);
+  text-align: right;
+  color: var(--muted);
+}
+.pool-wrap {
+  max-height: min(70vh, 720px);
+  overflow-y: auto;
+}
+.pool thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  font-size: 10px;
+  letter-spacing: 1.55px;
+  font-weight: 650;
+  color: var(--muted);
+  z-index: 1;
+}
+.pool td,
+.pool th[scope='row'] {
+  font-family: var(--mono);
+  cursor: pointer;
+}
+.pool tr.is-empty td,
+.pool tr.is-empty th {
+  color: var(--muted);
+  opacity: 0.7;
+}
+/* Cursor cell: inverted, the same "you are here" as the grids. */
+.pool .is-cursor {
+  background: var(--accent);
+  color: var(--tool-active-ink);
+  font-weight: 800;
+}
+.pool tbody tr {
+  height: 44px;
+}
+/* Pool cursor: every column's text is readable on the inverted cell. */
+.pool .is-cursor,
+.pool td.pool-mix.is-cursor {
+  color: var(--tool-active-ink);
+}
+@media (max-width: 900px) {
+  /* Phones keep the mixer columns; copy and clear stay in reach through the inspector keys. */
+  .pool-actions button:not(:first-child):not(:nth-child(2)) {
+    display: none;
+  }
+  .pool th,
+  .pool td {
+    padding: 6px 5px;
+  }
+  .pool td:nth-child(3),
+  .pool th:nth-child(3),
+  .pool td:nth-child(4),
+  .pool th:nth-child(4) {
+    display: none;
+  }
+}
+@media (max-width: 360px) {
+  .pool-actions button:first-child {
+    display: none;
+  }
+}
+@media (max-width: 340px) {
+  .pool th,
+  .pool td {
+    padding: 5px 3px;
+  }
+  .pool td:nth-child(2) {
+    max-width: 64px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pool-actions button {
+    padding: 4px 6px;
+  }
+}
+/* ------------------------------------------------------------------ one frame for every screen */
+/* Heading: title left; on the right the same cluster everywhere — id stepper slot, then
+   copy / paste / undo / redo — so nothing jumps when the screen changes. */
+.page-heading.is-compact {
+  position: relative;
+  min-height: 64px;
+  flex-wrap: nowrap;
+}
+.page-heading.is-compact h1 {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.page-heading.is-compact > div:first-child {
+  min-width: 0;
+}
+.heading-actions {
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 12px;
+}
+.stepper-slot {
+  display: inline-flex;
+  justify-content: flex-end;
+  min-width: 132px;
+}
+.history {
+  display: inline-flex;
+  gap: 6px;
+}
+/* The screen description floats over the page instead of pushing it down. */
+.about-text {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% - 4px);
+  left: 0;
+  max-width: min(560px, calc(100vw - 32px));
+  padding: 12px 16px;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 5px;
+  box-shadow: 0 18px 44px rgb(0 0 0 / 0.24);
+}
+/* Editor heading: subtabs · this screen's tools · hint, in fixed slots. */
+.editor-panel .panel-heading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+}
+.editor-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.editor-tools button,
+.editor-tools select {
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+.editor-tools button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+@media (min-width: 960px) {
+  /* ------------------------------------------------------------------ side column heights */
+  /* Desktop side column: the inspector has a fixed height, so Tracks and Keys never move. */
+  /* One fixed height for the whole inspector; with a footer the body is that much shorter. */
+  .workspace-side .inspector {
+    height: 390px;
+    display: flex;
+    flex-direction: column;
+  }
+  .workspace-side .inspector > .panel-heading,
+  .workspace-side .inspector > .inspect-foot {
+    flex: none;
+  }
+  .workspace-side .inspector .panel-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  /* More below: the bottom edge fades out. */
+  .workspace-side .inspector .panel-body.has-more {
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), transparent);
+  }
+}
+.inspect-help.field-help {
+  margin: 12px 0 0;
+}
+.inspect-foot {
+  padding: 10px 20px 12px;
+  border-top: 1px solid var(--line);
+}
+.inspect-inst-tools {
+  flex-wrap: wrap;
+}
+.inspect-inst-tools button {
+  min-height: 30px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+@media (min-width: 960px) and (max-height: 950px) {
+  /* Short desktop screens: a shorter inspector and tighter track rows, so all eight tracks
+   sit above the transport. */
+  .workspace-side .inspector {
+    height: 340px;
+  }
+  .workspace-side .track-list {
+    padding: 4px 12px 8px;
+  }
+  .workspace-side .track-line {
+    padding: 1px 6px;
+  }
+  .workspace-side .ms {
+    min-height: 26px;
+  }
+}
+@media (max-width: 700px) {
+  .editor-panel .panel-heading {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .stepper-slot {
+    min-width: 0;
+  }
+  .stepper-slot:empty {
+    display: none;
+  }
+}
+/* ------------------------------------------------------------------ fixed heights: headings, crumbs */
+/* The editor heading has one height on every screen. */
+.editor-panel > .panel-heading {
+  min-height: 56px;
+  height: 56px;
+}
+.title-row,
+.title-row h1 {
+  min-width: 0;
+}
+@media (max-width: 700px) {
+  .editor-panel > .panel-heading {
+    height: auto;
+    min-height: 0;
+  }
+  /* Phones: the tools get their own row on every screen, empty where there are none. */
+  .editor-tools {
+    min-height: 34px;
+  }
+  .stepper-slot,
+  .stepper-slot:empty {
+    display: inline-flex;
+    min-width: 124px;
+  }
+  .page-heading.is-compact h1 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+.inspector .chips button {
+  padding: 5px 9px;
+  font-size: 12px;
+}
+@media (max-width: 700px) {
+  /* Phones: the title has one fixed line height, so a "*" or a long name never moves it. */
+  .page-heading.is-compact {
+    flex-wrap: nowrap;
+  }
+  .page-heading.is-compact h1 {
+    line-height: 34px;
+    height: 34px;
+  }
+}
+@media (max-width: 360px) {
+  .page-heading.is-compact h1 {
+    line-height: 26px;
+    height: 26px;
+  }
+}
+@media (max-width: 700px) {
+  /* Phones: the sub-tabs fill the row in equal parts, so they always fit and never shift. */
+  .editor-panel .subtabs {
+    display: flex;
+    width: 100%;
+  }
+  .editor-panel .subtabs button {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 6px 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+@media (max-width: 1150px) and (min-width: 701px) {
+  /* Below 1150 px the key hint gives way (every key is on the Project screen), and the tools
+   stay on one line so the editor heading keeps its height. */
+  .editor-panel .editor-hint {
+    display: none;
+  }
+  .editor-tools {
+    flex-wrap: nowrap;
+  }
+  .editor-tools select {
+    min-width: 0;
+    max-width: 150px;
+  }
+}
+/* Anything the browser scrolls into view clears the sticky header, the transport and, on
+   phones, the edit bar that floats above it. */
+html {
+  scroll-padding-top: calc(var(--header) + 8px);
+  scroll-padding-bottom: calc(var(--bar) + 16px);
+}
+@media (max-width: 900px) {
+  html {
+    scroll-padding-bottom: calc(var(--bar) + 140px);
+  }
+}
+@media (max-width: 430px) {
+  /* ------------------------------------------------------------------ phone frame */
+  /* styles.css loads after this file: the phone header sizes need the extra specificity. */
+  :root:root {
+    --header: 104px;
+  }
+}
+
+/* ------------------------------------------------------------------ header and crumbs */
+
+@media (pointer: fine) and (min-width: 960px) and (max-height: 860px) {
+  .topbar {
+    height: 60px;
+  }
+  .top-nav {
+    height: 44px;
+  }
+}
+@media (max-width: 700px) {
+  .project-chip strong {
+    max-width: 150px;
+  }
+}
+@media (max-width: 430px) {
+  .project-chip strong {
+    max-width: 200px;
+  }
+}
+@media (max-width: 400px) {
+  .project-chip strong {
+    font-size: 11px;
+    letter-spacing: 0.3px;
+    padding: 8px 8px;
+    max-width: 220px;
+  }
+  .crumbs li + li::before {
+    padding: 0 4px;
+  }
+}
+@media (max-width: 430px) {
+  /* Phone header: the project name takes whatever room the buttons leave. */
+  .topbar-actions {
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: flex-end;
+  }
+  .project-chip {
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: flex-end;
+  }
+  .project-chip strong {
+    max-width: none;
+    min-width: 0;
+  }
+}
+@media (max-width: 340px) {
+  .crumbs li + li::before {
+    padding: 0 5px;
+    font-size: 13px;
+  }
+  .top-nav a {
+    padding: 0 3px;
+    gap: 4px;
+  }
+}
+@media (max-width: 430px) {
+  /* (styles.css is loaded after this file, so the phone chip rules need the extra .topbar.) */
+  .topbar .project-chip strong {
+    max-width: none;
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+}
+@media (max-width: 340px) {
+  /* 320–340 px: the four crumbs and MIX only just fit; tighten them so the chevrons keep air. */
+  .topbar + .top-nav,
+  .app-header .top-nav {
+    padding: 0 4px;
+    gap: 4px;
+  }
+  .app-header .top-nav a {
+    padding: 0 2px;
+    gap: 3px;
+    font-size: 11px;
+    letter-spacing: 0;
+  }
+  .app-header .top-nav a b {
+    font-size: 11px;
+    padding: 1px 3px;
+  }
+  .app-header .crumbs li + li::before {
+    padding: 0 3px;
+  }
+}
+@media (max-width: 430px) {
+  .app-header .topbar {
+    height: 60px;
+  }
+  .app-header .top-nav {
+    height: 44px;
+  }
+}
+.editor-history {
+  display: none;
+}
+@media (max-width: 700px) {
+  /* One row: the title (cut short if needed) and the id stepper slot, the same width on
+     every screen whether it holds a stepper or not. */
+  .page-heading.is-compact {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .page-heading.is-compact > div:first-child {
+    flex: 1 1 auto;
+  }
+  .page-heading.is-compact .eyebrow {
+    display: none;
+  }
+  .page-heading.is-compact {
+    min-height: 44px;
+  }
+  .app-shell .workspace,
+  main.workspace {
+    padding-top: 12px;
+  }
+  .page-heading.is-compact .heading-actions {
+    flex: 0 0 auto;
+  }
+  .page-heading .heading-actions > .history {
+    display: none;
+  }
+  /* Editor heading: sub-tabs on top; below, this screen's tools and the history. */
+  .editor-panel > .panel-heading {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 8px 10px;
+    gap: 8px;
+  }
+  .editor-panel > .panel-heading > .subtabs {
+    grid-column: 1 / -1;
+  }
+  .editor-history {
+    display: inline-flex;
+    gap: 4px;
+    justify-self: end;
+  }
+  .editor-history .icon-button {
+    min-width: 36px;
+    padding: 4px;
+  }
+  .editor-tools {
+    min-height: 44px;
+    flex-wrap: nowrap;
+  }
+  .editor-tools button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  /* The preset picker is the part that gives way. */
+  .editor-tools .preset-picker {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 150px;
+  }
+  .editor-tools .preset-picker select {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+  /* The edit bar stays one line; on the narrowest phones it scrolls sideways. */
+  .cell-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 4px;
+    padding: 6px;
+  }
+  .cell-bar button,
+  .cell-bar select {
+    flex: 1 0 auto;
+    min-width: 40px;
+    padding: 6px 7px;
+  }
+  .cell-bar-value {
+    min-width: 44px;
+  }
+  .cell-bar-value b {
+    font-size: 15px;
+  }
+}
+@media (max-width: 360px) {
+  .editor-history button[aria-label='Copy'],
+  .editor-history button[aria-label='Paste'] {
+    display: none;
+  }
+}
+/* Panel titles are one line; when there is no room they are cut, never broken ("S–" / "E"). */
+.panel-heading .small-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+@media (max-width: 700px) {
+  .cell-bar .cb-icon {
+    flex: 0 0 auto;
+    min-width: 40px;
+    padding: 6px;
+  }
+}
+@media (max-width: 360px) {
+  /* 320–360 px: the cursor cell already shows the value, so the grid bar drops its readout and
+   the buttons may narrow a little; everything stays on one line. */
+  .cell-bar.is-grid .cell-bar-value {
+    display: none;
+  }
+  .cell-bar button,
+  .cell-bar select {
+    flex: 1 1 auto;
+    min-width: 32px;
+    padding: 4px 2px;
+    font-size: 11.5px;
+  }
+  .cell-bar .cb-icon {
+    flex: 0 0 auto;
+    min-width: 36px;
+    padding: 4px;
+  }
+  .cell-bar select {
+    min-width: 0;
+    max-width: none;
+  }
+}
+@media (max-width: 430px) and (min-width: 361px) {
+  .cell-bar button,
+  .cell-bar select {
+    flex: 1 1 auto;
+    min-width: 34px;
+    padding: 4px 3px;
+  }
+  .cell-bar .cb-icon {
+    flex: 0 0 auto;
+    min-width: 38px;
+    padding: 4px;
+  }
+  .cell-bar select {
+    min-width: 0;
+    max-width: none;
+  }
+}
+.title-short {
+  display: none;
+}
+@media (max-width: 1100px) {
+  .title-long {
+    display: none;
+  }
+  .title-short {
+    display: inline;
+  }
+}
+/* A place with one screen: its name in the sub-tab slot, same height, no button look. */
+.subtabs.is-single {
+  background: transparent;
+  border-color: transparent;
+}
+.subtab-only {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 6px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+/* The keys toggle only exists on phones, next to undo / redo. */
+.bar-keys-toggle {
+  display: none;
+}
+.bar-keys-toggle.is-on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--tool-active-ink);
+}
+@media (max-width: 700px) {
+  .editor-history .bar-keys-toggle {
+    display: inline-flex;
+  }
+  /* Keys mode: arrows and close on top, OPTION / EDIT / SHIFT / PLAY below. */
+  .cell-bar.is-keys {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) 40px;
+    grid-auto-rows: 46px;
+    align-items: stretch;
+    gap: 4px;
+    overflow: visible;
+  }
+  .cell-bar.is-keys .hw-key {
+    min-height: 0;
+    min-width: 0;
+    padding: 2px;
+  }
+  .cell-bar.is-keys .hw-key small {
+    display: none;
+  }
+  .cell-bar.is-keys .bar-keys-close {
+    grid-row: 1 / 3;
+    grid-column: 5;
+    min-width: 0;
+    height: auto;
+  }
+}
+@media (max-width: 430px) and (min-width: 361px) {
+  .cell-bar.is-grid .cb-icon {
+    min-width: 34px;
+  }
+  .cell-bar-value {
+    min-width: 40px;
+  }
+}
+@media (min-width: 960px) and (max-width: 1150px) {
+  /* 960–1150 px: the side column is 280 px; the eight keys shrink to fit it. */
+  .workspace-side .hw-keys {
+    gap: 8px;
+    padding: 10px;
+    justify-content: space-between;
+  }
+  .workspace-side .hw-dpad {
+    grid-template-columns: repeat(3, 38px);
+    grid-template-rows: repeat(2, 44px);
+    gap: 4px;
+  }
+  .workspace-side .hw-mods {
+    grid-template-columns: repeat(2, 52px);
+    grid-template-rows: repeat(2, 44px);
+    gap: 4px;
+  }
+  .workspace-side .hw-key {
+    min-height: 0;
+    font-size: 9px;
+    letter-spacing: 0.3px;
+  }
+}
+@media (min-width: 960px) and (max-height: 820px) {
+  /* Laptop heights (800 and 768 px): shorter still, so the eight tracks keep clear of the transport. */
+  .workspace-side .inspector {
+    height: 290px;
+  }
+  .workspace-side .tracks-panel > .panel-heading {
+    padding-top: 8px;
+    padding-bottom: 8px;
+    min-height: 0;
+  }
+  .workspace-side .track-list {
+    padding: 2px 12px 6px;
+  }
+  .workspace-side .track-line {
+    padding: 0 6px;
+  }
+  .workspace-side .ms {
+    min-height: 23px;
+  }
+}
+@media (min-width: 960px) and (max-height: 780px) {
+  .workspace-side .inspector {
+    height: 262px;
+  }
+}
+@media (pointer: coarse) {
+  /* Touch keeps thumb-sized mute / solo; the side column scrolls instead. */
+  .workspace-side .ms {
+    min-height: 44px;
+  }
+}
+/* Choices in the inspector: a compact grid, so more of them show in its fixed height. */
+.inspector .chips {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 4px;
+}
+.inspector .chips button {
+  min-height: 30px;
+  padding: 4px 6px;
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pill {
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ pads */
+
+.pads {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 5px;
+  padding: 14px;
+}
+.pad {
+  min-height: 48px;
+  padding: 2px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 650;
+  border-radius: 4px;
+  user-select: none;
+  touch-action: none;
+}
+.pad.is-scale {
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+}
+.pad.is-out {
+  background: var(--pad-off);
+  border: 1px dashed var(--line);
+  color: var(--muted);
+  font-weight: 450;
+}
+.pad.is-root {
+  border: 2px solid var(--chord);
+  box-shadow: inset 0 3px 0 var(--chord);
+  font-weight: 800;
+}
+.pad:active {
+  background: var(--accent);
+  color: var(--tool-active-ink);
+}
+.pads-panel .panel-tools {
+  flex-wrap: nowrap;
+}
+@media (max-width: 700px) {
+  .pads {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    padding: 10px;
+  }
+}
+@media (max-width: 430px) {
+  .pads-mode {
+    display: none;
+  }
+}
+/* The sample panel's tools wrap under its title instead of squeezing it. */
+.sample-view > .panel-heading {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+.sample-view > .panel-heading > .small-label {
+  flex: none;
+}
+.sample-view > .panel-heading > .panel-tools {
+  flex-wrap: wrap;
+}
+@media (min-width: 1151px) {
+  /* Above 1150 px (320–360 px side column): touch-sized keys shrink to fit instead of
+   running out of the panel. */
+  .workspace-side .hw-keys {
+    gap: 10px;
+  }
+  .workspace-side .hw-dpad {
+    grid-template-columns: repeat(3, minmax(36px, 54px));
+  }
+  .workspace-side .hw-mods {
+    grid-template-columns: repeat(2, minmax(50px, 72px));
+  }
+  .workspace-side .hw-dpad,
+  .workspace-side .hw-mods {
+    min-width: 0;
+    flex: 0 1 auto;
+  }
+}
+@media (min-width: 960px) and (max-width: 1150px) {
+  /* 960–1150 px: two narrow form columns; the label column gives the value its room
+   (LOWSHELF, HEX (M8) whole). */
+  .form-group {
+    padding: 10px 8px 6px;
+  }
+  .field {
+    grid-template-columns: minmax(74px, 0.7fr) minmax(0, 1.3fr) var(--steppers);
+  }
+  .field-value {
+    font-size: 12px;
+  }
+}
+@media (max-width: 430px) {
+  /* Phones: a smaller title, so "Inst 03 · BASS" fits beside the id stepper. */
+  .page-heading.is-compact h1 {
+    font-size: 22px;
+  }
+  /* Copy / paste that can't act here make room for the tools (undo / redo keep their
+     place: the history is right-aligned). */
+  .editor-history button:disabled[aria-label='Copy'],
+  .editor-history button:disabled[aria-label='Paste'] {
+    display: none;
+  }
+}
+/* ------------------------------------------------------------------ parameter rows by group width */
+/* The row layout follows the width of its group, not of the screen: whatever the device,
+   pointer or column count, a narrow group gives the value its room first. */
+.form-group {
+  container-type: inline-size;
+}
+@container (max-width: 300px) {
+  .field {
+    grid-template-columns: minmax(70px, 0.6fr) minmax(0, 1.4fr) var(--steppers);
+    gap: 6px;
+    padding-left: 6px;
+  }
+  .field-label {
+    font-size: 10px;
+    letter-spacing: 0.3px;
+  }
+  .field-value {
+    font-size: 12px;
+  }
+}
+@container (max-width: 250px) {
+  /* TRANSPOSE, the longest one-word label, is 65 px at this size. */
+  .field {
+    grid-template-columns: minmax(66px, 0.6fr) minmax(0, 1.4fr) var(--steppers);
+  }
+  .field-value {
+    font-size: 11.5px;
+  }
+}
+@media (pointer: coarse) and (min-width: 701px) {
+  /* Touch: thumb-sized steppers need wider groups, so fewer, wider columns. */
+  .form {
+    grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  }
+}
+@media (max-width: 900px) {
+  /* Phones and small tablets: the edit bar floats over the page instead of holding a slot in
+   it (a sticky bar left an empty gap where it sat); the page ends high enough to scroll the
+   last panel above it. */
+  .cell-bar {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: calc(var(--bar) + 8px + env(safe-area-inset-bottom));
+    margin: 0;
+    z-index: 55;
+  }
+  main.workspace {
+    padding-bottom: calc(var(--bar) + 150px);
+  }
+}
+@media (max-width: 360px) {
+  .c4-label {
+    display: none;
+  }
+}
+/* Short desktop screens: the inspector is small, so it spends its height on the choices. A
+   choice field's value is already on its highlighted chip; other values get a smaller box. */
+@media (min-width: 960px) and (max-height: 820px) {
+  .workspace-side .inspect-value.is-choice {
+    display: none;
+  }
+  .workspace-side .inspect-big {
+    font-size: 22px;
+    padding: 3px 10px;
+  }
+  .workspace-side .inspect-value {
+    margin-bottom: 8px;
+  }
+  .workspace-side .inspector .panel-body {
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+}
+/* The footer's tools stay on one line, so the body keeps its height. */
+.inspect-foot .panel-tools {
+  flex-wrap: nowrap;
+}
+.inspect-foot button {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+}
+@media (min-width: 960px) and (max-height: 820px) {
+  .workspace-side .inspector > .panel-heading {
+    padding-top: 8px;
+    padding-bottom: 8px;
+    min-height: 0;
+  }
+  .workspace-side .inspect-foot {
+    padding: 6px 14px 8px;
+  }
+  .workspace-side .inspector .chips button {
+    min-height: 26px;
+    padding: 3px 6px;
+  }
+}
+/* Where the edit bar is shown (≤ 900 px) it holds the − / + for the focused parameter, so the
+   row's own steppers would only repeat it: the value gets their column instead. */
+@media (max-width: 900px) {
+  .field {
+    --steppers: 0px;
+  }
+  .field-steppers {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------------ app shell */
+
+/* No rubber-band overscroll: the top bar never pulls away from the browser's own bar. */
+html,
+body {
+  overscroll-behavior: none;
+}
+/* Desktop: an app, not a page. The header stays put; the editor column and the side column
+   (inspector, tracks, keys) each scroll on their own, and scrolling one never moves the other
+   (overscroll is contained, so reaching the end of one doesn't pass the scroll on). */
+@media (min-width: 960px) {
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+    /* clip, not just hidden: focus or a hidden label can't scroll the page (and the top bar)
+       away either. */
+    overflow: clip;
+  }
+  #root {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  #root > .app-header {
+    flex: none;
+  }
+  main.workspace {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    box-sizing: border-box;
+    padding-top: 0;
+    padding-bottom: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  main.workspace > .workspace-grid {
+    flex: 1 1 auto;
+    min-height: 0;
+    align-items: stretch;
+  }
+  .workspace-grid > .workspace-main,
+  .workspace-grid > .workspace-side {
+    /* Positioned, so visually hidden labels inside are laid out in the column. */
+    position: relative;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-gutter: stable;
+    padding-top: 24px;
+    padding-bottom: calc(var(--bar) + 24px);
+    /* Focus and scroll-into-view stop clear of the fixed transport (WCAG 2.4.11). */
+    scroll-padding-top: 16px;
+    scroll-padding-bottom: calc(var(--bar) + 16px);
+  }
+  .workspace-grid > .workspace-side {
+    position: static;
+    top: auto;
+    max-height: none;
+  }
+}
+/* Desktop Phrase screen: the pads stay at the bottom of the editor column while the grid
+   scrolls above them, so entering notes never scrolls the pads away (the cursor keeps clear
+   of them, as of the phone edit bar). */
+@media (min-width: 960px) {
+  .workspace-grid.view-phrase > .workspace-main > .pads-panel {
+    position: sticky;
+    /* Measured inside the column's bottom padding (transport + 24 px): 8 px above the transport. */
+    bottom: -16px;
+    z-index: 5;
+    box-shadow: 0 -8px 20px rgb(0 0 0 / 0.08);
+  }
+}
+/* …and compact there, so the grid keeps most of the column. */
+@media (min-width: 960px) {
+  .workspace-grid.view-phrase > .workspace-main > .pads-panel > .panel-heading {
+    padding-top: 4px;
+    padding-bottom: 4px;
+    min-height: 0;
+  }
+  .workspace-grid.view-phrase > .workspace-main > .pads-panel .panel-tools .icon-button {
+    min-height: 28px;
+    min-width: 28px;
+  }
+  .workspace-grid.view-phrase > .workspace-main > .pads-panel .pads {
+    padding: 8px 14px 10px;
+    gap: 4px;
+  }
+  .workspace-grid.view-phrase > .workspace-main > .pads-panel .pad {
+    min-height: 34px;
+  }
+}
+@media (min-width: 960px) and (pointer: coarse) {
+  .workspace-grid.view-phrase > .workspace-main > .pads-panel .pad {
+    min-height: 40px;
+  }
+  .workspace-grid.view-phrase > .workspace-main > .pads-panel .panel-tools .icon-button {
+    min-height: 40px;
+    min-width: 40px;
+  }
+}
+/* The pool's header row sticks: a row scrolled up into view stops below it. */
+.pool tbody tr {
+  scroll-margin-top: 30px;
+}
+/* Up to 1150 px the pool keeps its mixer columns; its row actions beyond the first two are
+   in the inspector (move, copy, paste, clear), so the table fits its panel. */
+@media (max-width: 1150px) {
+  .pool-actions button:not(:first-child):not(:nth-child(2)) {
+    display: none;
+  }
+}
+@media (min-width: 960px) and (max-width: 1000px) {
+  .pool th,
+  .pool td {
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+}
+/* The playing note never breaks ("C-" / "4"); the instrument name after it gives way. */
+.track-now b {
+  flex: none;
+  white-space: nowrap;
+}
+/* Narrow side columns (≤ 1150 px, 280 px wide): a shorter meter leaves the note its room. */
+@media (min-width: 960px) and (max-width: 1150px) {
+  .workspace-side .track-line {
+    grid-template-columns: 22px minmax(0, 1fr) 44px 30px 30px;
+    gap: 5px;
+  }
+}
+@media (min-width: 960px) and (max-width: 1150px) and (pointer: coarse) {
+  .workspace-side .track-line {
+    grid-template-columns: 22px minmax(0, 1fr) 40px 44px 44px;
+  }
+}
+/* Inspector action buttons stay on one line (a narrow side column must not break "Fill phrase…"). */
+.inspector .panel-tools button {
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ drag a value */
+
+/* With a mouse, values drag like knobs: the cursor says so. */
+@media (pointer: fine) {
+  .tracker .cell,
+  .field:not(:has(.field-text)),
+  .pool td.pool-mix,
+  .drag-value {
+    cursor: ns-resize;
+  }
+}
+body.is-value-dragging,
+body.is-value-dragging * {
+  cursor: ns-resize !important;
+  user-select: none !important;
+}
